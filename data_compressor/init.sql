@@ -3,6 +3,7 @@
 	Dev : Martin RAVENEL
 	Date : 14/101/2026
 	Sujet : 6.05 Développement Avancé - Projet d'analyse de données immobilières et démographiques
+		Initialisation de la base de données
 */
 
 DROP TABLE IF EXISTS Villes CASCADE;
