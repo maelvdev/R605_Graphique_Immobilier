@@ -17,7 +17,7 @@ public class Compressor {
 	public Compressor() {
 		this.dataCodeCommuneNomVilleEtPopulation = Reader.lireCSV(3, new int[]{4,8}, ';', "files/communes_littorales_2019.csv");
 
-		ArrayList<HashMap<String, String>> resultats = Reader.lireCSV(0, new int[]{10, 3, 31}, '|', "files/dvf_data.txt");
+		ArrayList<HashMap<String, String>> resultats = Reader.lireCSV(-1, new int[]{17, 10, 38}, '|', "files/valeurfonciere2024.txt");
 		
 		this.dataVilles = resultats.get(0);
 		this.dataPrix = resultats.get(1);
@@ -27,11 +27,7 @@ public class Compressor {
 		calculerPrixMoyenParVille();
 
 		//System.out.println(this.dataCodeCommuneNomVilleEtPopulation);
-		System.out.println(this.dataPrix);
-		System.out.println(this.dataSurface);
-
-		System.out.println("Nombre de ventes avant tri : " + this.dataVilles.size());
-		System.out.println("Nombre de villes littorales : " + this.dataCodeCommuneNomVilleEtPopulation.get(0).size());
+		//System.out.println(this.dataVilles);
 
 	}
 
