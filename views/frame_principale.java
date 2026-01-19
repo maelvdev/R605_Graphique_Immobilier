@@ -1,12 +1,16 @@
 package views;
 
 import javax.swing.*;
+
+import graphique_immobilier.Controlleur;
+
 import java.awt.*;
 import java.util.List;
-import models.DonneeImmobiliere;
-import models.GenerateurDonnees;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-// Cette classe est maintenant la FENÊTRE (JFrame) et non plus un panneau
+import models.Ville;
+
 public class frame_principale extends JFrame
 {
 
@@ -17,7 +21,7 @@ public class frame_principale extends JFrame
 	private JSplitPane splitPane;
 
 	// Données
-	private List<DonneeImmobiliere> donnees;
+	private List<Ville> donnees;
 
 	public frame_principale()
 	{
@@ -29,7 +33,7 @@ public class frame_principale extends JFrame
 		setLayout(new BorderLayout());
 
 		// --- Initialisation des données ---
-		donnees = GenerateurDonnees.genererDonneesAleatoires(50);
+		donnees = chargerDonnees();
 
 		// --- Création des vues (JPanels) ---
 		panelTop = new panel_parametres_top();
@@ -60,11 +64,34 @@ public class frame_principale extends JFrame
 
 		// Clic sur "Réinitialiser"
 		panelTop.getBtnReinitialiser().addActionListener(e -> {
-			// On régénère des données et on met à jour tout le monde
-			donnees = GenerateurDonnees.genererDonneesAleatoires(50);
+			// On recharge les données SQL et on met à jour tout le monde
+			donnees = chargerDonnees();
 			panelTab.mettreAJourDonnees(donnees);
 			actualiserGraphique();
 		});
+	}
+
+	private List<Ville> chargerDonnees()
+	{
+		try
+		{
+			Path sqlPath = Paths.get("data_compressor", "test_dataset.sql");
+			List<Ville> villes = Controlleur.chargerVillesDepuisSql(sqlPath);
+			if (villes == null || villes.isEmpty())
+			{
+				JOptionPane.showMessageDialog(this,
+						"Aucune donnée trouvée dans test_dataset.sql (INSERT INTO Villes).",
+						"Données manquantes", JOptionPane.WARNING_MESSAGE);
+			}
+			return villes;
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(this,
+					"Impossible de charger data_compressor/test_dataset.sql : " + ex.getMessage(),
+					"Erreur de chargement", JOptionPane.ERROR_MESSAGE);
+			return java.util.List.of();
+		}
 	}
 
 	// Méthode pour dire au graph de se redessiner selon les combobox

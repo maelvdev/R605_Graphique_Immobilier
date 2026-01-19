@@ -29,10 +29,10 @@ public class panel_parametres_top extends JPanel
 
 		// Ligne 1 : Les axes
 		labelAbscisse = new JLabel("Axe X (Abscisse):");
-		comboAbscisse = new JComboBox<>(new String[] { "Année", "Prix", "Surface", "Nombre de pièces" });
+		comboAbscisse = new JComboBox<>(new String[] { "Population", "Densité", "Âge moyen", "Chômage", "Prix m²" });
 
 		labelOrdonnee = new JLabel("Axe Y (Ordonnée):");
-		comboOrdonnee = new JComboBox<>(new String[] { "Prix", "Surface", "Nombre de pièces", "Année" });
+		comboOrdonnee = new JComboBox<>(new String[] { "Prix m²", "Chômage", "Densité", "Âge moyen", "Population" });
 
 		// Ligne 2 : Échelles et Options
 		labelEchelleX = new JLabel("Éch. X:");

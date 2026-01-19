@@ -3,13 +3,13 @@ package views;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import models.DonneeImmobiliere;
+import models.Ville;
 
 public class panel_graph_principal extends JPanel
 {
-	private List<DonneeImmobiliere> donnees;
-	private String nomAxeX = "Surface";
-	private String nomAxeY = "Prix";
+	private List<Ville> donnees;
+	private String nomAxeX = "Population";
+	private String nomAxeY = "Prix m²";
 	private boolean afficherGrille = true;
 
 	public panel_graph_principal()
@@ -18,7 +18,7 @@ public class panel_graph_principal extends JPanel
 		setBorder(BorderFactory.createLineBorder(Color.GRAY));
 	}
 
-	public void setParametres(List<DonneeImmobiliere> donnees, String x, String y, boolean grille)
+	public void setParametres(List<Ville> donnees, String x, String y, boolean grille)
 	{
 		this.donnees = donnees;
 		this.nomAxeX = x;
@@ -41,11 +41,10 @@ public class panel_graph_principal extends JPanel
 		int width = getWidth();
 		int height = getHeight();
 
-		// 1. Trouver les Min et Max pour l'échelle
 		double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
 		double minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
 
-		for (DonneeImmobiliere d : donnees)
+		for (Ville d : donnees)
 		{
 			double valX = d.getValeurParNom(nomAxeX);
 			double valY = d.getValeurParNom(nomAxeY);
@@ -59,7 +58,6 @@ public class panel_graph_principal extends JPanel
 				maxY = valY;
 		}
 
-		// Ajouter une petite marge aux axes
 		maxX *= 1.1;
 		maxY *= 1.1;
 		if (minX > 0)
@@ -71,7 +69,6 @@ public class panel_graph_principal extends JPanel
 		else
 			minY = 0;
 
-		// 2. Dessiner les axes
 		g2.setColor(Color.BLACK);
 		g2.drawLine(padding, height - padding, width - padding, height - padding); // Axe
 																					// X
@@ -80,7 +77,6 @@ public class panel_graph_principal extends JPanel
 		g2.drawString(nomAxeX, width - padding - 20, height - padding + 20);
 		g2.drawString(nomAxeY, padding - 20, padding - 10);
 
-		// 3. Dessiner la grille (optionnel)
 		if (afficherGrille)
 		{
 			g2.setColor(new Color(220, 220, 220));
@@ -95,12 +91,11 @@ public class panel_graph_principal extends JPanel
 			}
 		}
 
-		// 4. Dessiner les points
 		g2.setColor(Color.BLUE);
 		double echelleX = (width - 2 * padding) / (maxX - minX);
 		double echelleY = (height - 2 * padding) / (maxY - minY);
 
-		for (DonneeImmobiliere d : donnees)
+		for (Ville d : donnees)
 		{
 			double valX = d.getValeurParNom(nomAxeX);
 			double valY = d.getValeurParNom(nomAxeY);
