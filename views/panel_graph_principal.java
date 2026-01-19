@@ -9,9 +9,9 @@ import models.DonneeImmobiliere;
 
 public class panel_graph_principal extends JPanel
 {
-	private List<DonneeImmobiliere> donnees;
-	private String nomAxeX = "Surface";
-	private String nomAxeY = "Prix";
+	private List<Ville> donnees;
+	private String nomAxeX = "Population";
+	private String nomAxeY = "Prix m²";
 	private boolean afficherGrille = true;
 
 	// On stocke ces valeurs pour que le clic de souris puisse utiliser
@@ -35,7 +35,7 @@ public class panel_graph_principal extends JPanel
 		});
 	}
 
-	public void setParametres(List<DonneeImmobiliere> donnees, String x, String y, boolean grille)
+	public void setParametres(List<Ville> donnees, String x, String y, boolean grille)
 	{
 		this.donnees = donnees;
 		this.nomAxeX = x;
@@ -59,7 +59,7 @@ public class panel_graph_principal extends JPanel
 		minY = Double.MAX_VALUE;
 		maxY = Double.MIN_VALUE;
 
-		for (DonneeImmobiliere d : donnees)
+		for (Ville d : donnees)
 		{
 			double valX = d.getValeurParNom(nomAxeX);
 			double valY = d.getValeurParNom(nomAxeY);
@@ -206,7 +206,7 @@ public class panel_graph_principal extends JPanel
 		int tolerance = 8; // Rayon de tolérance en pixels pour le clic (clic
 							// facile)
 
-		for (DonneeImmobiliere d : donnees)
+		for (Ville d : donnees)
 		{
 			// On recalcule la position actuelle du point
 			Point p = convertirDonneeEnPixel(d, getWidth(), getHeight());
