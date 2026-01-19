@@ -5,26 +5,23 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import javax.swing.*;
-import models.DonneeImmobiliere;
+import models.Ville; // <-- Correction de l'import (C'était DonneeImmobiliere avant)
 
 public class panel_graph_principal extends JPanel
 {
-	private List<Ville> donnees;
+	private List<Ville> donnees; // <-- Utilisation de Ville
 	private String nomAxeX = "Population";
 	private String nomAxeY = "Prix m²";
 	private boolean afficherGrille = true;
 
-	// On stocke ces valeurs pour que le clic de souris puisse utiliser
-	// la même échelle que le dessin.
 	private double minX, maxX, minY, maxY;
-	private int padding = 60; // Marge un peu plus grande pour afficher le texte
+	private int padding = 60;
 
 	public panel_graph_principal()
 	{
 		setBackground(Color.WHITE);
 		setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
-		// --- GESTION DU CLIC ---
 		addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -42,13 +39,10 @@ public class panel_graph_principal extends JPanel
 		this.nomAxeY = y;
 		this.afficherGrille = grille;
 
-		// On force le recalcul des min/max
 		calculerMinMax();
-
 		repaint();
 	}
 
-	// Méthode pour préparer les échelles avant de dessiner
 	private void calculerMinMax()
 	{
 		if (donnees == null || donnees.isEmpty())
@@ -59,7 +53,7 @@ public class panel_graph_principal extends JPanel
 		minY = Double.MAX_VALUE;
 		maxY = Double.MIN_VALUE;
 
-		for (Ville d : donnees)
+		for (Ville d : donnees) // <-- Boucle sur Ville
 		{
 			double valX = d.getValeurParNom(nomAxeX);
 			double valY = d.getValeurParNom(nomAxeY);
@@ -73,21 +67,16 @@ public class panel_graph_principal extends JPanel
 				maxY = valY;
 		}
 
-		// Ajouter une marge de 10% pour que les points ne touchent pas les
-		// bords
 		double margeX = (maxX - minX) * 0.1;
 		double margeY = (maxY - minY) * 0.1;
 
-		// Si toutes les valeurs sont identiques, on force une marge
 		if (margeX == 0)
 			margeX = 10;
 		if (margeY == 0)
 			margeY = 10;
 
 		maxX += margeX;
-		minX = Math.max(0, minX - margeX); // On évite les valeurs négatives si
-											// possible
-
+		minX = Math.max(0, minX - margeX);
 		maxY += margeY;
 		minY = Math.max(0, minY - margeY);
 	}
@@ -107,20 +96,13 @@ public class panel_graph_principal extends JPanel
 		int graphWidth = width - 2 * padding;
 		int graphHeight = height - 2 * padding;
 
-		// Calcul des échelles de conversion
-		double echelleX = graphWidth / (maxX - minX);
-		double echelleY = graphHeight / (maxY - minY);
-
-		// 1. Dessiner la Grille ET les Graduations
+		// 1. Dessin de la Grille
 		g2.setFont(new Font("Arial", Font.PLAIN, 10));
-		int nbDivisions = 5; // Nombre de lignes de grille
+		int nbDivisions = 5;
 
 		for (int i = 0; i <= nbDivisions; i++)
 		{
-			// Position relative (de 0.0 à 1.0)
 			double ratio = (double) i / nbDivisions;
-
-			// --- AXE Y (Horizontal lines) ---
 			int yPos = height - padding - (int) (ratio * graphHeight);
 			double valY = minY + ratio * (maxY - minY);
 
@@ -129,14 +111,11 @@ public class panel_graph_principal extends JPanel
 				g2.setColor(new Color(220, 220, 220));
 				g2.drawLine(padding, yPos, width - padding, yPos);
 			}
-			// Texte Axe Y (Prix, etc.)
 			g2.setColor(Color.BLACK);
 			String txtY = formatNombre(valY);
-			// On aligne le texte à droite de l'axe Y
 			int txtWidth = g2.getFontMetrics().stringWidth(txtY);
 			g2.drawString(txtY, padding - txtWidth - 5, yPos + 4);
 
-			// --- AXE X (Vertical lines) ---
 			int xPos = padding + (int) (ratio * graphWidth);
 			double valX = minX + ratio * (maxX - minX);
 
@@ -145,40 +124,34 @@ public class panel_graph_principal extends JPanel
 				g2.setColor(new Color(220, 220, 220));
 				g2.drawLine(xPos, padding, xPos, height - padding);
 			}
-			// Texte Axe X
 			g2.setColor(Color.BLACK);
 			String txtX = formatNombre(valX);
-			// On centre le texte sous la ligne
 			int txtWidthX = g2.getFontMetrics().stringWidth(txtX);
 			g2.drawString(txtX, xPos - (txtWidthX / 2), height - padding + 15);
 		}
 
-		// 2. Dessiner les axes principaux (Noir) par dessus la grille
+		// 2. Axes
 		g2.setColor(Color.BLACK);
-		g2.setStroke(new BasicStroke(2)); // Ligne un peu plus épaisse
-		g2.drawLine(padding, height - padding, width - padding, height - padding); // X
-		g2.drawLine(padding, height - padding, padding, padding); // Y
-		g2.setStroke(new BasicStroke(1)); // Reset épaisseur
+		g2.setStroke(new BasicStroke(2));
+		g2.drawLine(padding, height - padding, width - padding, height - padding);
+		g2.drawLine(padding, height - padding, padding, padding);
+		g2.setStroke(new BasicStroke(1));
 
-		// Titres des axes
 		g2.setFont(new Font("Arial", Font.BOLD, 12));
 		g2.drawString(nomAxeX, width - padding - 20, height - padding + 35);
 		g2.drawString(nomAxeY, padding - 20, padding - 10);
 
-		// 3. Dessiner les points
+		// 3. Points
 		g2.setColor(Color.BLUE);
-		for (DonneeImmobiliere d : donnees)
+		for (Ville d : donnees) // <-- Boucle sur Ville
 		{
 			Point p = convertirDonneeEnPixel(d, width, height);
-			g2.fillOval(p.x - 4, p.y - 4, 8, 8); // Points un peu plus gros
-													// (8px)
+			g2.fillOval(p.x - 4, p.y - 4, 8, 8);
 		}
 	}
 
-	/**
-	 * Convertit une donnée immobilière en coordonnées (x, y) pixels sur l'écran
-	 */
-	private Point convertirDonneeEnPixel(DonneeImmobiliere d, int width, int height)
+	// <-- Paramètre changé en Ville
+	private Point convertirDonneeEnPixel(Ville d, int width, int height)
 	{
 		double valX = d.getValeurParNom(nomAxeX);
 		double valY = d.getValeurParNom(nomAxeY);
@@ -195,56 +168,41 @@ public class panel_graph_principal extends JPanel
 		return new Point(x, y);
 	}
 
-	/**
-	 * Détecte si un clic est proche d'un point et affiche les infos
-	 */
 	private void detecterClicSurPoint(int mouseX, int mouseY)
 	{
 		if (donnees == null)
 			return;
+		int tolerance = 8;
 
-		int tolerance = 8; // Rayon de tolérance en pixels pour le clic (clic
-							// facile)
-
-		for (Ville d : donnees)
+		for (Ville d : donnees) // <-- Boucle sur Ville
 		{
-			// On recalcule la position actuelle du point
 			Point p = convertirDonneeEnPixel(d, getWidth(), getHeight());
-
-			// Calcul de la distance entre la souris et le point (Pythagore)
 			double distance = Math.sqrt(Math.pow(mouseX - p.x, 2) + Math.pow(mouseY - p.y, 2));
 
 			if (distance <= tolerance)
 			{
-				// Bingo ! On a cliqué sur ce point
 				afficherInfoBulle(d);
-				return; // On arrête après avoir trouvé le premier point
+				return;
 			}
 		}
 	}
 
-	private void afficherInfoBulle(DonneeImmobiliere d)
+	// <-- Mise à jour de l'affichage pour correspondre aux attributs de Ville
+	private void afficherInfoBulle(Ville d)
 	{
 		String message = String.format(
-				"Détails du bien :\n\n" + "Année : %d\n" + "Prix : %.2f €\n" + "Surface : %.2f m²\n" + "Pièces : %d",
-				d.getAnnee(), d.getPrix(), d.getSurface(), d.getNbPieces());
+				"Détails de la ville :\n\n" + "Nom : %s (Code: %d)\n" + "Prix m² : %.0f €\n" + "Population : %d hab\n"
+						+ "Densité : %.1f hab/km²\n" + "Chômage : %.1f %%",
+				d.getNom(), d.getCode(), d.getPrixM2(), d.getPopulation(), d.getDensite(), d.getChomage());
 
-		JOptionPane.showMessageDialog(this, message, "Information Point", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(this, message, "Info Ville", JOptionPane.INFORMATION_MESSAGE);
 	}
 
-	// Utilitaire pour afficher des nombres propres (ex: 150000 au lieu de
-	// 150000.0)
 	private String formatNombre(double val)
 	{
 		if (val >= 10000)
-		{
-			return String.format("%.0f", val); // Pas de virgule pour les gros
-												// chiffres
-		}
+			return String.format("%.0f", val);
 		else
-		{
-			return String.format("%.1f", val); // 1 chiffre après la virgule
-												// pour les petits
-		}
+			return String.format("%.1f", val);
 	}
 }
