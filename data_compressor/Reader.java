@@ -2,7 +2,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
-import java.util.regex.Pattern; // Import nécessaire
+import java.util.regex.Pattern;
 
 public class Reader {
 
@@ -15,6 +15,7 @@ public class Reader {
 
 		try {
 			Scanner sc = new Scanner(new File(file));
+			int compteurLigne = 0;
 
 			while(sc.hasNext())
 			{
@@ -23,8 +24,14 @@ public class Reader {
 
 				String[] tabDatas = ligne.split(Pattern.quote(String.valueOf(separateur)));
 
-				if(tabDatas.length > colCle) {
-					String cle = tabDatas[colCle];
+				if (colCle == -1 || tabDatas.length > colCle) {
+					
+					String cle;
+					if (colCle == -1) {
+						cle = String.valueOf(compteurLigne++);
+					} else {
+						cle = tabDatas[colCle];
+					}
 
 					for(int j = 0 ; j < colData.length ; j++)
 					{
