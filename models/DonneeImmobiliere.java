@@ -53,4 +53,10 @@ public class DonneeImmobiliere
 			return 0;
 		}
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Annee:" + annee + ", Prix:" + prix + ", Surf:" + surface + ", Pieces:" + nbPieces;
+	}
 }
