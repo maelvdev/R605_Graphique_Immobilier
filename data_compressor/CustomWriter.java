@@ -7,7 +7,6 @@ import java.util.Map;
 
 public class CustomWriter
 {
-	// J'ai changé HashMap<?,?> en Map<?,?> pour plus de flexibilité
 	public void writeMapToFile(Map<?, ?> map, String filePath) throws IOException
 	{
 		// Vérification de sécurité
