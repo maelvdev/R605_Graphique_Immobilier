@@ -1,92 +1,117 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class Compressor {
 
 	private ArrayList<HashMap<String, String>> dataCodeCommuneNomVilleEtPopulation;
 
-	private ArrayList<HashMap<String, String>> dataValeursFoncieres;
-
-	private HashMap<String, String> dataVilles;
-	private HashMap<String, String> dataPrix;
-	private HashMap<String, String> dataSurface;
-
-
 	public Compressor() {
-		this.dataCodeCommuneNomVilleEtPopulation = Reader.lireCSV(3, new int[]{4,8}, ';', "files/communes_littorales_2019.csv");
+		System.out.println("Chargement des communes littorales...");
+		this.dataCodeCommuneNomVilleEtPopulation = Reader.lireCSV(3, new int[]{4, 8}, ';', "files/communes_littorales_2019.csv");
 
-		ArrayList<HashMap<String, String>> resultats = Reader.lireCSV(-1, new int[]{17, 10, 38}, '|', "files/valeurfonciere2024.txt");
-		
-		this.dataVilles = resultats.get(0);
-		this.dataPrix = resultats.get(1);
-		this.dataSurface = resultats.get(2);
-
-		System.out.println("données :" + resultats.size());
-
-		calculerPrixMoyenParVille();
-
-		this.dataValeursFoncieres = Reader.lireCSV(3, new int[]{11,20}, ';', "files/communes_littorales_2019.csv");
-
-		new CustomWriter(this.dataVilles, this.dataPrix, this.dataSurface);
+		traiterDvfEtCalculerMoyenne("files/valeurfonciere2024.txt");
 	}
 
-	private void calculerPrixMoyenParVille() {
-		HashMap<String, Double> sommePrixM2ParVille = new HashMap<>();
-		HashMap<String, Integer> nombreVentesParVille = new HashMap<>();
+	private void traiterDvfEtCalculerMoyenne(String cheminDvf) {
+		HashMap<String, Double> sommePrixM2ParCode = new HashMap<>();
+		HashMap<String, Integer> nombreVentesParCode = new HashMap<>();
+		ArrayList<VilleResultat> listeAInserer = new ArrayList<>();
 
-		for (String idVente : dataVilles.keySet()) {
-			
-			String ville = dataVilles.get(idVente);
-			String strPrix = dataPrix.get(idVente);
-			String strSurface = dataSurface.get(idVente);
+		Set<String> codesLittoraux = dataCodeCommuneNomVilleEtPopulation.get(0).keySet();
+		System.out.println("Filtre actif sur " + codesLittoraux.size() + " communes littorales.");
 
-			try {
-				if (strPrix == null || strPrix.isEmpty() || strSurface == null || strSurface.isEmpty()) continue;
+		// INDICES DVF (Basé sur votre header fourni)
+		int COL_NATURE = 9;   // Nature mutation (Vente)
+		int COL_VALEUR = 10;  // Valeur foncière
+		int COL_COMMUNE = 17; // Nom de la commune
+		int COL_DEPT = 18;    // Code département (ex: 01)
+		int COL_CODE_COM = 19;// Code commune (ex: 76)
+		int COL_SURFACE = 38; // Surface reelle bati
 
-				double prix = Double.parseDouble(strPrix.replace(",", "."));
-				double surface = Double.parseDouble(strSurface.replace(",", "."));
+		try (BufferedReader br = new BufferedReader(new FileReader(cheminDvf))) {
+			String line;
+			int countLignes = 0;
 
-				if (surface > 0 && prix > 0) {
-					
-					double prixAuM2 = prix / surface;
+			while ((line = br.readLine()) != null) {
+				countLignes++;
 
-					sommePrixM2ParVille.put(ville, sommePrixM2ParVille.getOrDefault(ville, 0.0) + prixAuM2);
+				String[] row = line.split(Pattern.quote("|"), -1);
 
-					nombreVentesParVille.put(ville, nombreVentesParVille.getOrDefault(ville, 0) + 1);
+				if (row.length <= COL_SURFACE) continue;
+
+				if (!row[COL_NATURE].equals("Vente")) continue;
+
+				String dept = row[COL_DEPT];
+				String com = row[COL_CODE_COM];
+
+				String codeInsee = genererCodeInsee(dept, com);
+
+				if (!codesLittoraux.contains(codeInsee)) {
+					continue;
 				}
 
-			} catch (NumberFormatException e) {
+				String strPrix = row[COL_VALEUR];
+				String strSurface = row[COL_SURFACE];
+
+				try {
+					if (strPrix.isEmpty() || strSurface.isEmpty()) continue;
+
+					double prix = Double.parseDouble(strPrix.replace(",", "."));
+					double surface = Double.parseDouble(strSurface.replace(",", "."));
+
+					if (surface > 0 && prix > 1000) {
+						double prixAuM2 = prix / surface;
+
+						sommePrixM2ParCode.put(codeInsee, sommePrixM2ParCode.getOrDefault(codeInsee, 0.0) + prixAuM2);
+						nombreVentesParCode.put(codeInsee, nombreVentesParCode.getOrDefault(codeInsee, 0) + 1);
+					}
+				} catch (NumberFormatException e) {
+				}
 			}
+			System.out.println("Lecture DVF terminée. " + countLignes + " lignes analysées.");
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
-		// affichage ici pour l'instant
-		System.out.println("--- PRIX MOYEN AU M² PAR VILLE ---");
-		for (String ville : sommePrixM2ParVille.keySet()) {
-			double totalPrixM2 = sommePrixM2ParVille.get(ville);
-			int nombreVentes = nombreVentesParVille.get(ville);
-			
+		System.out.println("--- PRIX MOYEN AU M² (LITTORAL) ---");
+
+		for (String codeInsee : sommePrixM2ParCode.keySet()) {
+			double totalPrixM2 = sommePrixM2ParCode.get(codeInsee);
+			int nombreVentes = nombreVentesParCode.get(codeInsee);
 			double moyenne = totalPrixM2 / nombreVentes;
-			
-			System.out.println("Ville : " + ville + " -> " + String.format("%.2f", moyenne) + " €/m² (" + nombreVentes + " ventes)");
+
+			String nomVille = dataCodeCommuneNomVilleEtPopulation.get(0).get(codeInsee);
+
+			listeAInserer.add(new VilleResultat(codeInsee, nomVille, moyenne));
 		}
+
+		System.out.println("Nombre de communes prêtes : " + listeAInserer.size());
+		CustomWriter.saveListToDatabase(listeAInserer);
 	}
 
-	private void trierDonneesParVilles(ArrayList<HashMap<String, String>> donnesATrier, ArrayList<HashMap<String, String>> donnesDeTri) {
-		Set<String> clesValides = new HashSet<>();
 
-		for (HashMap<String, String> mapTri : donnesDeTri) {
-			clesValides.addAll(mapTri.keySet());
-		}
+	private String genererCodeInsee(String dept, String commune) {
+		if (dept == null || commune == null) return "";
 
-		for (HashMap<String, String> mapATrier : donnesATrier) {
-			mapATrier.keySet().retainAll(clesValides);
-		}
+		// Nettoyage
+		dept = dept.trim();
+		commune = commune.trim();
+
+		// Cas classique : Dept (2 chars) + Commune (3 chars)
+		// Si la commune est "76", il faut la transformer en "076"
+		if (commune.length() == 1) commune = "00" + commune;
+		else if (commune.length() == 2) commune = "0" + commune;
+
+		// Cas DOM-TOM (Dept 3 chars ex: 974)
+		return dept + commune;
 	}
 
-	public static void main(String[] args)
-	{
-		Compressor c = new Compressor();
+	public static void main(String[] args) {
+		new Compressor();
 	}
 }
