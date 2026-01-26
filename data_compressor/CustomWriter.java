@@ -13,8 +13,14 @@ public class CustomWriter {
 		String password = "devAvancé12";
 		String url = "jdbc:postgresql://" + host + ":6543/" + database + "?sslmode=require";
 
-		String sql = "INSERT INTO Ville (code, nom, prix_m2) VALUES (?, ?, ?) " +
-				"ON CONFLICT (code) DO UPDATE SET prix_m2 = EXCLUDED.prix_m2, nom = EXCLUDED.nom";
+		String sql = "INSERT INTO Ville (code, nom, prix_m2, age_moyen, population, densite, chomage) VALUES (?, ?, ?, ?, ?, ?, ?) " +
+				"ON CONFLICT (code) DO UPDATE SET " +
+				"prix_m2 = EXCLUDED.prix_m2, " +
+				"nom = EXCLUDED.nom, " +
+				"age_moyen = EXCLUDED.age_moyen, " +
+				"population = EXCLUDED.population, " +
+				"densite = EXCLUDED.densite, " +
+				"chomage = EXCLUDED.chomage";
 
 		try { Class.forName("org.postgresql.Driver"); } catch (Exception e) {}
 
@@ -33,6 +39,10 @@ public class CustomWriter {
 				pstmt.setString(1, ville.code);
 				pstmt.setString(2, ville.nom);
 				pstmt.setDouble(3, ville.prixMoyen);
+				pstmt.setDouble(4, ville.ageMoyen);
+				pstmt.setDouble(5, ville.population);
+				pstmt.setDouble(6, ville.densite);
+				pstmt.setDouble(7, ville.chomeurs);
 
 				pstmt.addBatch();
 				count++;
