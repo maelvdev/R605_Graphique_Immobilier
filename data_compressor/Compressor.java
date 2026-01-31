@@ -15,153 +15,37 @@ public class Compressor {
 
 	private HashMap<String, Double> mapChomage;
 
+	private HashMap<String, Double> sommePrixM2ParCode;
+
+	HashMap<String, Integer> nombreVentesParCode;
+
 	public Compressor() {
+
+		this.sommePrixM2ParCode = new HashMap<>();
+		this.nombreVentesParCode = new HashMap<>();
+
 		System.out.println("Chargement des communes littorales...");
 		this.dataCodeCommuneNomVilleEtPopulation = Reader.lireCSV(3, new int[]{4, 8}, ';', "files/communes_littorales_2019.csv");
 
 		System.out.println("Chargement des données d'âge...");
-		this.mapAgeEtPopParCode = chargerDonneesAge("files/age-insee-2020.csv");
+		this.mapAgeEtPopParCode = Reader.chargerDonneesAge("files/age-insee-2020.csv");
 
 		System.out.println("Chargement de la densité...");
-		this.mapDensite = chargerDensite("files/insee_rp_hist_1968.csv");
+		this.mapDensite = Reader.chargerDensite("files/insee_rp_hist_1968.csv");
 
 		System.out.println("Chargement du chômage...");
-		this.mapChomage = chargerChomage("files/chomage.csv");
+		this.mapChomage = Reader.chargerChomage("files/chomage.csv");
 
+		System.out.println("Chargement des valeurs foncières et de la taille des villes...");
 		traiterDvfEtCalculerMoyenne("files/valeurfonciere2024.txt");
-	}
 
-	private HashMap<String, Double> chargerChomage(String path) {
-		HashMap<String, Double> res = new HashMap<>();
-
-		try (BufferedReader br = new BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(path), java.nio.charset.StandardCharsets.UTF_8))) {
-
-			for(int i = 0; i < 12; i++) br.readLine();
-
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] row = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
-
-				if (row.length < 16) continue;
-
-				String code = row[4].trim();
-				if (code.length() == 4) code = "0" + code;
-
-				String valStr = row[15];
-
-				try {
-					valStr = valStr.replace(",", ".");
-					valStr = valStr.replaceAll("[^0-9.]", "");
-
-					if (!valStr.isEmpty()) {
-						double val = Double.parseDouble(valStr);
-						res.put(code, val);
-					}
-				} catch (NumberFormatException e) {
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return res;
-	}
-
-
-	private HashMap<String, Double> chargerDensite(String path) {
-		HashMap<String, Double> res = new HashMap<>();
-		HashMap<String, Integer> mapAnnee = new HashMap<>();
-
-		try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-			for (int i = 0; i < 5; i++) br.readLine();
-
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] row = line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)");
-
-				if (row.length < 4) continue;
-
-				String code = row[0].replace("\"", "").trim();
-
-				try {
-					int annee = Integer.parseInt(row[2].trim());
-
-					String valStr = row[3].replace("\"", "").replace(",", ".");
-					double densite = Double.parseDouble(valStr);
-
-					if (!mapAnnee.containsKey(code) || annee > mapAnnee.get(code)) {
-						mapAnnee.put(code, annee);
-						res.put(code, densite);
-					}
-
-				} catch (NumberFormatException e) {
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return res;
-	}
-
-	private HashMap<String, double[]> chargerDonneesAge(String path) {
-		HashMap<String, double[]> resultats = new HashMap<>();
-
-		double[] poidsAge = {1, 4, 8, 14, 21, 32, 47, 59.5, 72, 85};
-		int[] colsF = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-		int[] colsH = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
-
-		try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-			String line = br.readLine();
-
-			while ((line = br.readLine()) != null) {
-				String[] row = line.split(Pattern.quote(","), -1);
-
-				if (row.length < 26) continue;
-
-				String codeInsee = row[0].replace("\"", "").trim();
-				if (codeInsee.length() == 4) codeInsee = "0" + codeInsee;
-
-				double totalPopulation = 0;
-				double sommePonderee = 0;
-
-				for (int i = 0; i < poidsAge.length; i++) {
-					try {
-						double popF = row[colsF[i]].isEmpty() ? 0 : Double.parseDouble(row[colsF[i]]);
-						double popH = row[colsH[i]].isEmpty() ? 0 : Double.parseDouble(row[colsH[i]]);
-
-						// Calcul de la population pour cette tranche
-						double popTranche = popF + popH;
-
-						// On additionne pour la population totale
-						totalPopulation += popTranche;
-						// On additionne pour la moyenne d'âge
-						sommePonderee += (popTranche * poidsAge[i]);
-
-					} catch (NumberFormatException e) {
-					}
-				}
-
-				if (totalPopulation > 0) {
-					double ageMoyen = sommePonderee / totalPopulation;
-					// On stocke les deux valeurs : [0] = Age, [1] = Population
-					resultats.put(codeInsee, new double[]{ageMoyen, totalPopulation});
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return resultats;
+		calculerDonneesEtEnvoyerAuWritter();
 	}
 
 	private void traiterDvfEtCalculerMoyenne(String cheminDvf) {
-		HashMap<String, Double> sommePrixM2ParCode = new HashMap<>();
-		HashMap<String, Integer> nombreVentesParCode = new HashMap<>();
-
-		ArrayList<VilleResultat> listeAInserer = new ArrayList<>();
-
 		Set<String> codesLittoraux = dataCodeCommuneNomVilleEtPopulation.get(0).keySet();
 		System.out.println("Filtre actif sur " + codesLittoraux.size() + " communes littorales.");
 
-		// INDICES DVF (Basé sur votre header fourni)
 		int COL_NATURE = 9;   // Nature mutation (Vente)
 		int COL_VALEUR = 10;  // Valeur foncière
 		int COL_COMMUNE = 17; // Nom de la commune
@@ -214,6 +98,11 @@ public class Compressor {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void calculerDonneesEtEnvoyerAuWritter()
+	{
+		ArrayList<VilleResultat> listeAInserer = new ArrayList<>();
 
 		System.out.println("--- PRIX MOYEN AU M² (LITTORAL) ---");
 
@@ -244,16 +133,12 @@ public class Compressor {
 	private String genererCodeInsee(String dept, String commune) {
 		if (dept == null || commune == null) return "";
 
-		// Nettoyage
 		dept = dept.trim();
 		commune = commune.trim();
 
-		// Cas classique : Dept (2 chars) + Commune (3 chars)
-		// Si la commune est "76", il faut la transformer en "076"
 		if (commune.length() == 1) commune = "00" + commune;
 		else if (commune.length() == 2) commune = "0" + commune;
 
-		// Cas DOM-TOM (Dept 3 chars ex: 974)
 		return dept + commune;
 	}
 
